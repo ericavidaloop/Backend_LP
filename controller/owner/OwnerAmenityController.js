@@ -38,6 +38,39 @@ const OwnerAmenityController = {
         }
     },
 
+    update: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { name, type, description, capacity, price, status, quantity } = req.body;
+            const available = (status === 'available' || status === 'true') ? 'Yes' : 'No';
+            
+            if (req.file) {
+                await OwnerAmenityModel.update(id, { 
+                    name, type, description, capacity, price, available, quantity: quantity || 0, image: req.file.path 
+                });
+            } else {
+                await OwnerAmenityModel.update(id, { 
+                    name, type, description, capacity, price, available, quantity: quantity || 0 
+                });
+            }
+            res.json({ message: 'Updated successfully' });
+        } catch (err) { 
+            console.error(err);
+            res.status(500).json({ message: 'Error updating amenity' }); 
+        }
+    },
+
+    delete: async (req, res) => {
+        try {
+            const { id } = req.params;
+            await OwnerAmenityModel.delete(id);
+            res.json({ message: 'Deleted successfully' });
+        } catch (err) { 
+            console.error(err);
+            res.status(500).json({ message: 'Error deleting amenity' }); 
+        }
+    }
+
 };
 
 module.exports = OwnerAmenityController;
