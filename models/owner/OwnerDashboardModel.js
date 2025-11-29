@@ -54,4 +54,44 @@ const OwnerDashboardModel = {
         if(chartQuery) { const [rows] = await db.query(chartQuery, chartParams); return rows; }
         return [];
     },
-}
+
+    getSalesByService: async (year, month, filterType) => {
+        let serviceQuery = `SELECT serviceType as name, IFNULL(SUM(amount), 0) as value FROM sales WHERE YEAR(date) = ?`;
+        let serviceParams = [year];
+        if (filterType === 'daily') { serviceQuery += ` AND MONTH(date) = ?`; serviceParams.push(month); }
+        serviceQuery += ` GROUP BY serviceType ORDER BY value DESC`;
+        const [rows] = await db.query(serviceQuery, serviceParams);
+        return rows;
+    },
+    
+    getRecentSales: async () => {
+        const [rows] = await db.query('SELECT * FROM sales ORDER BY date DESC LIMIT 100');
+        return rows;
+    },
+
+    getYears: async () => {
+        const [rows] = await db.query('SELECT DISTINCT YEAR(date) as year FROM sales ORDER BY year DESC');
+        return rows.map(r => r.year);
+    },
+
+    getFeedback: async (startDate, endDate, filter) => {
+        let query = 'SELECT * FROM FeedbackDb';
+        const params = [];
+        const conditions = [];
+        if (startDate && endDate) { conditions.push('date BETWEEN ? AND ?'); params.push(`${startDate} 00:00:00`, `${endDate} 23:59:59`); }
+        if (conditions.length > 0) query += ' WHERE ' + conditions.join(' AND ');
+        query += ' ORDER BY date DESC';
+        const [rows] = await db.query(query, params);
+        return rows;
+    },
+
+    getStats: async () => {
+        const [salesStats] = await db.query('SELECT IFNULL(SUM(amount), 0) as totalRevenue, COUNT(*) as totalTransactions FROM sales');
+        const [feedbackStats] = await db.query('SELECT COUNT(*) as totalFeedback FROM FeedbackDb');
+        const [salesByService] = await db.query('SELECT serviceType as name, IFNULL(SUM(amount), 0) as value FROM sales GROUP BY serviceType ORDER BY value DESC');
+        const [feedbackDist] = await db.query(`SELECT CASE WHEN rating >= 4 THEN 'Positive' WHEN rating = 3 THEN 'Neutral' ELSE 'Negative' END as name, COUNT(*) as value FROM FeedbackDb GROUP BY CASE WHEN rating >= 4 THEN 'Positive' WHEN rating = 3 THEN 'Neutral' ELSE 'Negative' END`);
+        return { salesStats: salesStats[0], feedbackStats: feedbackStats[0], salesByService, feedbackDist };
+    }
+};
+
+export default OwnerDashboardModel;
