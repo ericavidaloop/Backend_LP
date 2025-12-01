@@ -1,13 +1,13 @@
 import db from '../../config/db.js';
 
 const CustomerAmModel = {
-  // GET all amenities with availability logic
+  // GET all amenities
   async getAll() {
     const query = `
       SELECT a.*, 
       (SELECT COUNT(*) FROM ReservationDb b 
-       WHERE b.amenity_id = a.id 
-       AND b.date = CURDATE() 
+       WHERE b.amenity_id = a.id            -- Eto, okay na gamitin ang ID
+       AND b.check_in_date = CURDATE()      -- Eto, pinalitan ko ng check_in_date
        AND b.status IN ('Confirmed', 'Checked-In')) as booked_today
       FROM AmenitiesDb a 
       ORDER BY a.id DESC
@@ -21,8 +21,8 @@ const CustomerAmModel = {
     const query = `
       SELECT a.*, 
       (SELECT COUNT(*) FROM ReservationDb b 
-       WHERE b.amenity_id = a.id 
-       AND b.date = CURDATE() 
+       WHERE b.amenity_id = a.id            -- ID na ang gamit
+       AND b.check_in_date = CURDATE()      -- check_in_date na ang gamit
        AND b.status IN ('Confirmed', 'Checked-In')) as booked_today
       FROM AmenitiesDb a 
       WHERE a.id = ?
@@ -31,7 +31,6 @@ const CustomerAmModel = {
     return rows[0];
   },
 
-  // Format amenity data with availability logic
   formatAmenity(amenity) {
     const totalQuantity = amenity.quantity ? parseInt(amenity.quantity) : 0;
     const currentBooked = amenity.booked_today || 0;
@@ -51,6 +50,11 @@ const CustomerAmModel = {
       remaining: Math.max(0, totalQuantity - currentBooked),
       image: amenity.image
     };
+  },
+
+  async getFeatured() {
+    const [rows] = await db.query("SELECT * FROM AmenitiesDb LIMIT 3");
+    return rows;
   }
 };
 

@@ -3,11 +3,17 @@ import db from '../../config/db.js';
 const OwnerAmenityModel = {
     getAll: async () => {
         const query = `
-            SELECT a.*, 
-            (SELECT COUNT(*) FROM ReservationDb b 
-             WHERE b.amenity_id = a.id 
-             AND b.date = DATE(CONVERT_TZ(NOW(), '+00:00', '+08:00')) 
-             AND b.status IN ('Confirmed', 'Checked-In')) as booked_today
+            SELECT 
+                a.*, 
+                -- CRITICAL FIX: Count reservations that are active today or confirmed for today/future
+                (SELECT COUNT(b.id) 
+                 FROM ReservationDb b 
+                 WHERE b.amenity_id = a.id 
+                 AND b.status IN ('Confirmed', 'Checked-In')
+                 -- Check if the booking period spans the current date (CURDATE())
+                 AND DATE(b.check_in_date) <= CURDATE()
+                 AND DATE(b.check_out_date) >= CURDATE()
+                ) as booked
             FROM AmenitiesDb a 
             ORDER BY a.id DESC
         `;
@@ -23,6 +29,7 @@ const OwnerAmenityModel = {
 
     create: async (data) => {
         const { image, name, type, description, capacity, price, available, quantity } = data;
+        // NOTE: available status is calculated on the frontend, let's store it as boolean/int.
         return await db.query(
             'INSERT INTO AmenitiesDb (image, name, type, description, capacity, price, available, quantity) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
             [image, name, type, description, capacity, price, available, quantity]
@@ -31,17 +38,19 @@ const OwnerAmenityModel = {
 
     update: async (id, data) => {
         const { name, description, price, type, available, capacity, quantity, image } = data;
+        // Use COALESCE in SQL to handle conditional updates cleanly if the field is not in the form
+        let updateQuery = 'UPDATE AmenitiesDb SET name=?, description=?, price=?, type=?, available=?, capacity=?, quantity=?';
+        const params = [name, description, price, type, available, capacity, quantity];
+        
         if (image) {
-            return await db.query(
-                'UPDATE AmenitiesDb SET name=?, description=?, price=?, type=?, available=?, capacity=?, quantity=?, image=? WHERE id=?',
-                [name, description, price, type, available, capacity, quantity, image, id]
-            );
-        } else {
-            return await db.query(
-                'UPDATE AmenitiesDb SET name=?, description=?, price=?, type=?, available=?, capacity=?, quantity=? WHERE id=?',
-                [name, description, price, type, available, capacity, quantity, id]
-            );
+            updateQuery += ', image=?';
+            params.push(image);
         }
+        
+        updateQuery += ' WHERE id=?';
+        params.push(id);
+
+        return await db.query(updateQuery, params);
     },
 
     delete: async (id) => {

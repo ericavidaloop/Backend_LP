@@ -40,26 +40,37 @@ const OwnerAmenityController = {
     },
 
     update: async (req, res) => {
-        try {
-            const { id } = req.params;
-            const { name, type, description, capacity, price, status, quantity } = req.body;
-            const available = (status === 'available' || status === 'true') ? 'Yes' : 'No';
+        try {
+            const { id } = req.params;
+            const { name, type, description, capacity, price, status, quantity } = req.body;
+            const available = (status === 'available' || status === 'true') ? 'Yes' : 'No';
             
-            if (req.file) {
-                await OwnerAmenityModel.update(id, { 
-                    name, type, description, capacity, price, available, quantity: quantity || 0, image: req.file.path 
-                });
-            } else {
-                await OwnerAmenityModel.update(id, { 
-                    name, type, description, capacity, price, available, quantity: quantity || 0 
-                });
-            }
-            res.json({ message: 'Updated successfully' });
-        } catch (err) { 
-            console.error(err);
-            res.status(500).json({ message: 'Error updating amenity' }); 
-        }
-    },
+            // Gumawa ng object na may lahat ng data para mas simple
+            const updateData = {
+                name, 
+                type: type || 'kubo', // Re-use the default type just in case
+                description, 
+                capacity, 
+                price, 
+                available, 
+                quantity: quantity || 0
+            };
+            
+            if (req.file) {
+                // Kung may bagong file, idagdag ang image path sa updateData
+                updateData.image = req.file.path;
+            } 
+            
+            // Tawagin ang model isang beses lang
+            await OwnerAmenityModel.update(id, updateData);
+            
+            res.json({ message: 'Updated successfully' });
+        } catch (err) { 
+            console.error("Update Amenity Error:", err); // Mas detalyadong log
+            // Ito ang nagpapakita ng alert: "Error saving amenity: Error updating amenity"
+            res.status(500).json({ message: 'Error updating amenity' }); 
+        }
+    },
 
     delete: async (req, res) => {
         try {
