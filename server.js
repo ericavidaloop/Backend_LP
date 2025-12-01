@@ -7,7 +7,7 @@ import CustomerAmRoutes from "./routers/customer/CustomerAmRoutes.js";
 import OwnerAmenityRoutes from "./routers/owner/ownerAmenityRoutes.js"; 
 import ownerDashboardRoutes from './routers/owner/ownerDashboardRoutes.js';
 import transactionRoutes from './routers/TransactionRoutes.js';
-
+import reservationRoutes from './routers/ReservationRoutes.js';
 
 const app = express();
 
@@ -40,7 +40,7 @@ app.use('/api/owner', ownerDashboardRoutes);
 
 // NEW: routes para sa transactions at reservations
 app.use('/api/transactions', transactionRoutes);
-
+app.use('/api/reservations', reservationRoutes);
 
 app.get('/api/health', (req, res) => {
     res.json({ 
