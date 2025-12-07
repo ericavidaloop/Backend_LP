@@ -1,7 +1,7 @@
 import db from '../config/db.js';
 
 const ReservationModel = {
-  
+  // 1. STANDARD CRUD (From Old & New)
   async create(reservationData) {
     const {
       transaction_id,
@@ -63,6 +63,11 @@ const ReservationModel = {
     return Promise.all(promises);
   },
 
+  // =========================================================
+  // 2. DASHBOARD / TASK LIST FEATURES (From New Code)
+  // =========================================================
+
+  // 👇 CHECK-INS TODAY (PH Time Logic)
   async getTodaysCheckIns() {
     const [rows] = await db.query(
       `SELECT r.*, t.customer_name, t.contact_number 
@@ -76,6 +81,7 @@ const ReservationModel = {
     return rows;
   },
 
+  // 👇 CHECK-OUTS TODAY (PH Time Logic)
   async getTodaysCheckOuts() {
     const [rows] = await db.query(
       `SELECT r.*, t.customer_name, t.contact_number 
@@ -88,6 +94,7 @@ const ReservationModel = {
     return rows;
   },
 
+  // 👇 NEW: Extend check-out date
   async extendCheckOutDate(reservation_id, new_check_out_date) {
     const [result] = await db.query(
       'UPDATE ReservationDb SET check_out_date = ? WHERE id = ?',
@@ -96,6 +103,7 @@ const ReservationModel = {
     return result.affectedRows;
   },
 
+  // 👇 NEW: Update payment status to Fully Paid when balance is 0
   async updatePaymentToFullyPaid(transaction_id) {
     const [result] = await db.query(
       `UPDATE TransactionDb 
