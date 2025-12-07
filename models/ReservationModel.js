@@ -75,7 +75,19 @@ const ReservationModel = {
     );
     return rows;
   },
-  
+
+  async getTodaysCheckOuts() {
+    const [rows] = await db.query(
+      `SELECT r.*, t.customer_name, t.contact_number 
+       FROM ReservationDb r
+       JOIN TransactionDb t ON r.transaction_id = t.id
+       WHERE DATE(r.check_out_date) = DATE(DATE_ADD(NOW(), INTERVAL 8 HOUR))
+       AND r.status != 'Cancelled'
+       ORDER BY r.check_out_date ASC`
+    );
+    return rows;
+  },
+
 };
 
 export default ReservationModel;
