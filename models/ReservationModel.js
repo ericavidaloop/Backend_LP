@@ -96,6 +96,16 @@ const ReservationModel = {
     return result.affectedRows;
   },
 
+  async updatePaymentToFullyPaid(transaction_id) {
+    const [result] = await db.query(
+      `UPDATE TransactionDb 
+       SET payment_status = 'Fully Paid' 
+       WHERE id = ? AND balance <= 0`,
+      [transaction_id]
+    );
+    return result.affectedRows;
+  }
+
 };
 
 export default ReservationModel;
