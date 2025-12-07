@@ -61,7 +61,21 @@ const ReservationModel = {
   async createMultiple(reservationsData) {
     const promises = reservationsData.map(reservation => this.create(reservation));
     return Promise.all(promises);
-  }
+  },
+
+  async getTodaysCheckIns() {
+    const [rows] = await db.query(
+      `SELECT r.*, t.customer_name, t.contact_number 
+       FROM ReservationDb r
+       JOIN TransactionDb t ON r.transaction_id = t.id
+       -- Compare Check-in Date vs PH Date Today
+       WHERE DATE(r.check_in_date) = DATE(DATE_ADD(NOW(), INTERVAL 8 HOUR))
+       AND r.status != 'Cancelled'
+       ORDER BY r.check_in_date ASC`
+    );
+    return rows;
+  },
+  
 };
 
 export default ReservationModel;
